@@ -116,10 +116,48 @@ navigateur, sous la clé `doudouventaire.v1`. S'il en reste, l'espace privé le
 remarque et propose, en haut de page, de faire monter ces doudous sur l'étagère.
 Ouvre `/admin` avec le navigateur qui les gardait.
 
+## Annoncer les anniversaires
+
+Un second service, `anniversaires`, fait un tour par jour et envoie un message sur
+un webhook quand un doudou fête son anniversaire. Sans anniversaire, rien n'est
+envoyé.
+
+Sur Discord : *Paramètres du salon* → *Intégrations* → *Webhooks* → *Copier
+l'URL*, puis dans `.env` :
+
+```sh
+WEBHOOK_URL=https://discord.com/api/webhooks/…
+WEBHOOK_FORMAT=discord             # ou slack
+NOTIFY_AT=09:00                    # l'heure du tour
+TZ=Europe/Brussels                 # le fuseau dans lequel la lire
+PUBLIC_URL=http://localhost:8000   # lien ajouté au message, facultatif
+```
+
+Puis `docker compose up -d`. Pour l'essayer sans attendre l'heure :
+
+```sh
+docker compose run --rm anniversaires node notify.js --now
+docker compose logs -f anniversaires
+```
+
+```
+Aujourd'hui, 2 doudous font la fête :
+🎂 **Pêche** (Dinosaure) a 4 ans aujourd'hui !
+🎂 **Zébulon** (Vache) a 5 ans aujourd'hui !
+👉 http://localhost:8000
+```
+
+`TZ` compte : sans lui le conteneur vit en UTC, et `09:00` tomberait à 11:00 en
+été. Le jour déjà annoncé est noté dans `data/annonces.json`, donc un redémarrage
+n'envoie pas deux fois le même message — et si la machine dormait à l'heure dite,
+l'annonce est rattrapée au réveil. Sans `WEBHOOK_URL`, les anniversaires sont
+écrits dans le journal sans être envoyés.
+
 ## Les fichiers
 
 ```
 server.js              le serveur : pages, API, session, stockage, calendrier
+notify.js              le guetteur : un tour par jour, un message sur webhook
 public/                tout ce que le navigateur reçoit
   index.html  app.js     l'étagère publique
   admin.html  admin.js   l'espace privé : connexion, ajout, modification
@@ -127,7 +165,7 @@ public/                tout ce que le navigateur reçoit
   style.css              toute la mise en forme
 tools/
   ical-vers-doudous.py   convertit un export d'agenda en fichier d'import
-data/                  les doudous, écrits par le serveur — à sauvegarder
+data/                  les doudous (et le dernier jour annoncé) — à sauvegarder
 sauvegardes/           les exports de l'inventaire
 docker-compose.yml     le lancement
 .env                   l'identifiant et le mot de passe (non versionné)

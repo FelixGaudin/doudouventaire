@@ -20,3 +20,25 @@ services:
       # Les doudous vivent ici, seul dossier inscriptible et seul à sauvegarder.
       - ./data:/app/data
     restart: unless-stopped
+
+  # Le guetteur : un tour par jour, et un message si un doudou fête son
+  # anniversaire. Il lit l'étagère par le réseau interne, jamais le fichier.
+  anniversaires:
+    image: node:22-alpine
+    container_name: doudouventaire-anniversaires
+    working_dir: /app
+    command: node notify.js
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file: .env
+    environment:
+      # Le nom du service suffit : pas besoin du port publié.
+      APP_URL: http://doudouventaire:8000
+      # Sans cela le conteneur vit en UTC, et « 09:00 » tomberait à côté.
+      TZ: ${TZ:-Europe/Brussels}
+    volumes:
+      - ./notify.js:/app/notify.js:ro
+      # Pour se souvenir du dernier jour annoncé.
+      - ./data:/app/data
+    depends_on:
+      - doudouventaire
+    restart: unless-stopped
