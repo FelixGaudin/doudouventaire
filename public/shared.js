@@ -101,8 +101,21 @@ function longDate(iso) {
 
 /* ---------- Espèces ---------- */
 
+/* Pour comparer et pour chercher : ni la casse, ni les accents, ni les ligatures
+   ne comptent, de sorte que « nenuphar » trouve « Nénuphar » et « coeur » « cœur ».
+   NFD sépare la lettre de son accent, qu'on retire ensuite ; œ et æ, eux, n'ont
+   pas de décomposition et se remplacent à la main. */
+export function foldText(value) {
+  return String(value)
+    .toLowerCase()
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function normalizeSpecies(species) {
-  return species.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return foldText(species.trim());
 }
 
 /* Clé de regroupement : « Lapin » et « Lapins » sont la même espèce. */
@@ -253,11 +266,11 @@ export function createShelf({ editable = false, onEdit, onDelete } = {}) {
   }
 
   function renderGrid(list) {
-    const query = filters.query.trim().toLowerCase();
+    const query = foldText(filters.query.trim());
     const visible = list.filter((plush) => {
       const matchesSpecies = filters.species === "all" || speciesKey(plush.species) === filters.species;
-      const haystack = `${plush.name} ${plush.species}`.toLowerCase();
-      return matchesSpecies && (!query || haystack.includes(query));
+      if (!matchesSpecies || !query) return matchesSpecies;
+      return foldText(`${plush.name} ${plush.species}`).includes(query);
     });
 
     visible.sort((a, b) => {
