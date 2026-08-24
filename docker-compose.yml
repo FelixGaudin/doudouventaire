@@ -1,0 +1,17 @@
+services:
+  doudouventaire:
+    image: node:22-alpine
+    container_name: doudouventaire
+    working_dir: /app
+    command: node server.js
+    # Sans cela, les doudous sur le disque appartiendraient à root.
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server.js:/app/server.js:ro
+      - ./public:/app/public:ro
+      # Les doudous vivent ici, seul dossier inscriptible et seul à sauvegarder.
+      - ./data:/app/data
+    restart: unless-stopped

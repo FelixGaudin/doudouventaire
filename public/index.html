@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doudouventaire</title>
+<meta name="description" content="L'inventaire des doudous : nom, espèce, anniversaire.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;700&family=Sniglet:wght@400;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="alternate" type="text/calendar" href="/anniversaires.ics" title="Anniversaires des doudous">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧸</text></svg>">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead__identity">
+    <h1 class="wordmark">Doudouventaire</h1>
+    <p class="tally" id="tally"></p>
+  </div>
+</header>
+
+<main>
+  <!-- Hero : le prochain anniversaire, ou l'accueil quand l'étagère est vide -->
+  <section class="spotlight" id="spotlight" hidden></section>
+
+  <section class="welcome" id="welcome" hidden>
+    <h2 class="welcome__title">L'étagère est vide</h2>
+    <p class="welcome__text">Aucun doudou n'a encore été posé sur l'étagère. Reviens plus tard.</p>
+  </section>
+
+  <section class="shelf" id="shelfSection" hidden>
+    <div class="toolbar">
+      <label class="field-search">
+        <span class="sr-only">Chercher un doudou</span>
+        <input type="search" id="search" placeholder="Chercher un nom, une espèce…" autocomplete="off">
+      </label>
+      <label class="field-sort">
+        <span class="field-sort__label">Trier par</span>
+        <select id="sort">
+          <option value="birthday">Prochain anniversaire</option>
+          <option value="name">Nom</option>
+          <option value="age">Âge</option>
+          <option value="added">Ajout récent</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="chips" id="chips"></div>
+
+    <ul class="grid" id="grid"></ul>
+    <p class="no-match" id="noMatch" hidden>Aucun doudou ne correspond à cette recherche.</p>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>Doudouventaire · l'étagère se regarde. <a href="/admin">Espace privé</a> pour la garnir.</p>
+  <p>Les anniversaires en agenda : <a href="/anniversaires.ics">anniversaires.ics</a> — à ouvrir, ou dont l'adresse s'ajoute à un agenda pour qu'il se tienne à jour tout seul.</p>
+</footer>
+
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

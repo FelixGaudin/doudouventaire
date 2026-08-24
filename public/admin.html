@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doudouventaire · espace privé</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;700&family=Sniglet:wght@400;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="alternate" type="text/calendar" href="/anniversaires.ics" title="Anniversaires des doudous">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧸</text></svg>">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead__identity">
+    <h1 class="wordmark">Doudouventaire <span class="wordmark__badge">espace privé</span></h1>
+    <p class="tally" id="tally"></p>
+  </div>
+  <div class="masthead__actions" id="mastheadActions" hidden>
+    <button class="btn btn--primary" id="addButton" type="button">Ajouter un doudou</button>
+    <div class="quiet-actions">
+      <button class="link-btn" id="exportButton" type="button">Exporter</button>
+      <button class="link-btn" id="importButton" type="button">Importer</button>
+      <button class="link-btn" id="logoutButton" type="button">Déconnexion</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- La porte : tant qu'elle est fermée, rien de l'étagère n'est demandé -->
+  <section class="login" id="loginGate" hidden>
+    <h2 class="login__title">Espace privé</h2>
+    <p class="login__text">Les doudous s'ajoutent ici. <a href="/">L'étagère publique</a> est par là.</p>
+    <form class="login__form" id="loginForm">
+      <label class="field">
+        <span class="field__label">Identifiant</span>
+        <input type="text" id="user" name="user" autocomplete="username" required autofocus>
+      </label>
+      <label class="field">
+        <span class="field__label">Mot de passe</span>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </label>
+      <p class="login__error" id="loginError" hidden></p>
+      <button class="btn btn--primary" type="submit">Entrer</button>
+    </form>
+  </section>
+
+  <div id="adminApp" hidden>
+    <!-- Hero : le prochain anniversaire, ou l'accueil quand l'étagère est vide -->
+    <section class="spotlight" id="spotlight" hidden></section>
+
+    <section class="legacy" id="legacy" hidden>
+      <p class="legacy__text">
+        Ce navigateur garde encore <strong id="legacyCount"></strong> de l'ancienne
+        version, avant le serveur. Ils ne sont visibles par personne d'autre.
+      </p>
+      <button class="btn btn--soft" id="legacyImport" type="button">Les faire monter sur l'étagère</button>
+    </section>
+
+    <section class="welcome" id="welcome" hidden>
+      <h2 class="welcome__title">L'étagère est vide</h2>
+      <p class="welcome__text">Ajoute un doudou : son nom, son espèce, sa photo et sa date de naissance. Le prochain anniversaire s'affichera ici, et sur la page publique.</p>
+      <div class="welcome__actions">
+        <button class="btn btn--primary" id="welcomeAdd" type="button">Ajouter un doudou</button>
+        <button class="link-btn" id="demoButton" type="button">Voir avec des exemples</button>
+      </div>
+    </section>
+
+    <section class="shelf" id="shelfSection" hidden>
+      <div class="toolbar">
+        <label class="field-search">
+          <span class="sr-only">Chercher un doudou</span>
+          <input type="search" id="search" placeholder="Chercher un nom, une espèce…" autocomplete="off">
+        </label>
+        <label class="field-sort">
+          <span class="field-sort__label">Trier par</span>
+          <select id="sort">
+            <option value="birthday">Prochain anniversaire</option>
+            <option value="name">Nom</option>
+            <option value="age">Âge</option>
+            <option value="added">Ajout récent</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <ul class="grid" id="grid"></ul>
+      <p class="no-match" id="noMatch" hidden>Aucun doudou ne correspond à cette recherche.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <p>Doudouventaire · les doudous sont enregistrés sur le serveur, et visibles de tous sur <a href="/">la page publique</a>.</p>
+  <p>Les anniversaires en agenda : <a href="/anniversaires.ics">anniversaires.ics</a></p>
+</footer>
+
+<dialog class="sheet" id="sheet">
+  <form id="form" method="dialog">
+    <h2 class="sheet__title" id="sheetTitle">Nouveau doudou</h2>
+
+    <div class="sheet__body">
+      <label class="field">
+        <span class="field__label">Nom</span>
+        <input type="text" name="name" id="name" required maxlength="40" autocomplete="off" placeholder="Rex">
+      </label>
+
+      <label class="field">
+        <span class="field__label">Espèce</span>
+        <select name="species" id="species" required></select>
+      </label>
+
+      <label class="field" id="newSpeciesField" hidden>
+        <span class="field__label">Nom de la nouvelle espèce</span>
+        <input type="text" id="newSpecies" maxlength="30" autocomplete="off" placeholder="Licorne">
+      </label>
+
+      <label class="field">
+        <span class="field__label">Date de naissance</span>
+        <input type="date" name="birthday" id="birthday" required>
+      </label>
+
+      <div class="field">
+        <span class="field__label">Photo</span>
+        <div class="photo-picker">
+          <div class="photo-picker__preview" id="photoPreview" aria-hidden="true"></div>
+          <div class="photo-picker__controls">
+            <button class="btn btn--soft" id="photoButton" type="button">Choisir une photo</button>
+            <button class="link-btn" id="photoClear" type="button" hidden>Retirer la photo</button>
+            <input type="file" id="photo" accept="image/*" hidden>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="sheet__error" id="sheetError" hidden></p>
+
+    <div class="sheet__footer">
+      <button class="link-btn" type="button" id="cancelButton">Annuler</button>
+      <button class="btn btn--primary" type="submit" id="saveButton">Ajouter le doudou</button>
+    </div>
+  </form>
+</dialog>
+
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Les identifiants de l'espace privé
+.env
+
+# Les doudous, écrits par le serveur
+data/
+
+# Les exports de l'inventaire
+sauvegardes/
+
+tools/
