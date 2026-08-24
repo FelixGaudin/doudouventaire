@@ -7,8 +7,13 @@ services:
     # Sans cela, les doudous sur le disque appartiendraient à root.
     user: "${UID:-1000}:${GID:-1000}"
     env_file: .env
+    environment:
+      # Dans le conteneur, le serveur écoute toujours sur 8000 : c'est le port
+      # publié qui se règle dans .env. Ainsi PORT=80 fonctionne aussi, alors que
+      # le conteneur ne tourne pas en root et ne pourrait pas s'y lier lui-même.
+      PORT: 8000
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     volumes:
       - ./server.js:/app/server.js:ro
       - ./public:/app/public:ro
