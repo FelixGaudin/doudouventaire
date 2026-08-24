@@ -486,6 +486,17 @@ main { max-width: 1140px; margin: 0 auto; }
 
 .field { display: block; }
 
+/* L'intitulé, et à sa droite de quoi montrer le mot de passe. */
+.field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.field__head .field__label { margin-bottom: 0; }
+
 .field__label {
   display: block;
   margin-bottom: 0.35rem;

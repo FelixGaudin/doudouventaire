@@ -27,7 +27,16 @@ function showLogin() {
   el("loginGate").hidden = false;
   el("adminApp").hidden = true;
   el("mastheadActions").hidden = true;
+  showPassword(false);
   el("user").focus();
+}
+
+/* Le mot de passe se montre le temps de le relire, et se recache dès qu'on
+   quitte la connexion : il ne reste pas en clair à l'écran. */
+function showPassword(visible) {
+  el("password").type = visible ? "text" : "password";
+  el("revealPassword").textContent = visible ? "Masquer" : "Afficher";
+  el("revealPassword").setAttribute("aria-pressed", String(visible));
 }
 
 async function submitLogin(event) {
@@ -40,6 +49,7 @@ async function submitLogin(event) {
       password: el("password").value,
     });
     el("password").value = "";
+    showPassword(false);
     await showApp();
   } catch (failure) {
     error.textContent = failure.message;
@@ -302,6 +312,10 @@ async function addDemo() {
 /* ---------- Câblage ---------- */
 
 el("loginForm").addEventListener("submit", submitLogin);
+el("revealPassword").addEventListener("click", () => {
+  showPassword(el("password").type === "password");
+  el("password").focus();
+});
 el("logoutButton").addEventListener("click", logout);
 
 el("addButton").addEventListener("click", () => openSheet(null));

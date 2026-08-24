@@ -39,10 +39,13 @@
         <span class="field__label">Identifiant</span>
         <input type="text" id="user" name="user" autocomplete="username" required autofocus>
       </label>
-      <label class="field">
-        <span class="field__label">Mot de passe</span>
+      <div class="field">
+        <div class="field__head">
+          <label class="field__label" for="password">Mot de passe</label>
+          <button class="link-btn" id="revealPassword" type="button" aria-pressed="false">Afficher</button>
+        </div>
         <input type="password" id="password" name="password" autocomplete="current-password" required>
-      </label>
+      </div>
       <p class="login__error" id="loginError" hidden></p>
       <button class="btn btn--primary" type="submit">Entrer</button>
     </form>
