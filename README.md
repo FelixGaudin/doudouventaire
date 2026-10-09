@@ -130,7 +130,6 @@ WEBHOOK_URL=https://discord.com/api/webhooks/…
 WEBHOOK_FORMAT=discord             # ou slack
 NOTIFY_AT=09:00                    # l'heure du tour
 TZ=Europe/Brussels                 # le fuseau dans lequel la lire
-PUBLIC_URL=http://localhost:8000   # lien ajouté au message, facultatif
 ```
 
 Puis `docker compose up -d`. Pour l'essayer sans attendre l'heure :
@@ -144,8 +143,11 @@ docker compose logs -f anniversaires
 Aujourd'hui, 2 doudous font la fête :
 🎂 **Pêche** (Dinosaure) a 4 ans aujourd'hui !
 🎂 **Zébulon** (Vache) a 5 ans aujourd'hui !
-👉 http://localhost:8000
 ```
+
+Sur Discord, la photo de chaque doudou fêté suit le message, jointe et montrée
+sous son nom ; ceux qui n'en ont pas restent en texte. Slack, lui, n'accepte que
+du texte sur un webhook entrant : là-bas, le message arrive sans les photos.
 
 `TZ` compte : sans lui le conteneur vit en UTC, et `09:00` tomberait à 11:00 en
 été. Le jour déjà annoncé est noté dans `data/annonces.json`, donc un redémarrage

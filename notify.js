@@ -35,7 +35,6 @@ const STATE_FILE = path.join(DATA_DIR, "annonces.json");
 const APP_URL = (process.env.APP_URL || "http://localhost:8000").replace(/\/+$/, "");
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 const WEBHOOK_FORMAT = (process.env.WEBHOOK_FORMAT || "discord").toLowerCase();
-const PUBLIC_URL = (process.env.PUBLIC_URL || "").replace(/\/+$/, "");
 
 /* --now annonce tout de suite et s'arrête : de quoi essayer son webhook. */
 const RUN_NOW = process.argv.includes("--now");
@@ -98,36 +97,95 @@ function ageLabel(age) {
   return age === 1 ? "1 an" : `${age} ans`;
 }
 
-function buildMessage(birthdays) {
-  /* Discord met en gras entre doubles astérisques, Slack entre simples. */
-  const bold = WEBHOOK_FORMAT === "slack" ? "*" : "**";
+/* ---------- Le message ---------- */
+
+/* Discord met en gras entre doubles astérisques, Slack entre simples. */
+const BOLD = WEBHOOK_FORMAT === "slack" ? "*" : "**";
+
+function buildText(birthdays) {
   const lines = birthdays.map(({ name, species, age }) => (
     age === 0
-      ? `🎉 ${bold}${name}${bold} (${species}) fête son arrivée aujourd'hui !`
-      : `🎂 ${bold}${name}${bold} (${species}) a ${ageLabel(age)} aujourd'hui !`
+      ? `🎉 ${BOLD}${name}${BOLD} (${species}) fête son arrivée aujourd'hui !`
+      : `🎂 ${BOLD}${name}${BOLD} (${species}) a ${ageLabel(age)} aujourd'hui !`
   ));
 
   const header = birthdays.length > 1
     ? `Aujourd'hui, ${birthdays.length} doudous font la fête :`
     : null;
 
-  const parts = [header, ...lines].filter(Boolean);
-  if (PUBLIC_URL) parts.push(`👉 ${PUBLIC_URL}`);
-  return parts.join("\n");
+  return [header, ...lines].filter(Boolean).join("\n");
+}
+
+/* ---------- Les photos ---------- */
+
+/* L'étagère garde les photos en data-URI ; un webhook veut des octets. */
+function decodePhoto(photo) {
+  const match = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(
+    typeof photo === "string" ? photo : "",
+  );
+  if (!match) return null;
+  return {
+    bytes: Buffer.from(match[2], "base64"),
+    type: `image/${match[1]}`,
+    extension: match[1] === "jpeg" ? "jpg" : match[1],
+  };
+}
+
+/* Discord n'accepte pas plus de dix encarts, ni un message trop lourd : le jour
+   d'une grande fête, les photos partent en plusieurs messages. */
+const MAX_PHOTOS_PER_MESSAGE = 10;
+const MAX_BYTES_PER_MESSAGE = 7 * 1024 * 1024;
+
+function photoBatches(birthdays) {
+  const batches = [];
+  let batch = [];
+  let bytes = 0;
+
+  for (const plushie of birthdays) {
+    const photo = decodePhoto(plushie.photo);
+    if (!photo) continue;
+    const full = batch.length === MAX_PHOTOS_PER_MESSAGE
+      || bytes + photo.bytes.length > MAX_BYTES_PER_MESSAGE;
+    if (batch.length && full) {
+      batches.push(batch);
+      batch = [];
+      bytes = 0;
+    }
+    batch.push({ name: plushie.name, photo });
+    bytes += photo.bytes.length;
+  }
+
+  if (batch.length) batches.push(batch);
+  return batches;
+}
+
+/* Une photo ne s'affiche que si elle voyage avec le message : chaque doudou
+   photographié reçoit son encart, qui pointe vers sa pièce jointe. */
+function discordForm(text, batch) {
+  const form = new FormData();
+  const embeds = batch.map(({ name, photo }, index) => {
+    const filename = `doudou-${index}.${photo.extension}`;
+    form.append(`files[${index}]`, new Blob([photo.bytes], { type: photo.type }), filename);
+    /* Le beurre de la palette, celui que le site réserve aux anniversaires. */
+    return { title: name, color: 0xf7c948, image: { url: `attachment://${filename}` } };
+  });
+
+  form.append("payload_json", JSON.stringify({ content: text, embeds }));
+  return form;
 }
 
 /* ---------- Le webhook ---------- */
 
-async function post(text, attempts = 3) {
-  /* Discord attend « content », Slack « text ». */
-  const body = WEBHOOK_FORMAT === "slack" ? { text } : { content: text };
+async function post(payload, attempts = 3) {
+  /* Un formulaire porte les photos ; le reste part en JSON. */
+  const form = payload instanceof FormData;
 
   for (let attempt = 1; ; attempt++) {
     try {
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers: form ? undefined : { "Content-Type": "application/json" },
+        body: form ? payload : JSON.stringify(payload),
       });
       if (!response.ok) {
         throw new Error(`${response.status} ${(await response.text()).slice(0, 200)}`);
@@ -138,6 +196,20 @@ async function post(text, attempts = 3) {
       log(`l'envoi a échoué (${error.message}), nouvel essai dans ${attempt * 5} s`);
       await sleep(attempt * 5000);
     }
+  }
+}
+
+/* Slack n'accepte que du texte sur un webhook entrant : là-bas, les photos —
+   qui ne vivent que dans l'étagère — ne peuvent pas suivre. */
+async function send(birthdays) {
+  const text = buildText(birthdays);
+  if (WEBHOOK_FORMAT === "slack") return post({ text });
+
+  const batches = photoBatches(birthdays);
+  if (!batches.length) return post({ content: text });
+
+  for (const [index, batch] of batches.entries()) {
+    await post(discordForm(index === 0 ? text : "", batch));
   }
 }
 
@@ -178,7 +250,7 @@ async function announce(now) {
     return 0;
   }
 
-  await post(buildMessage(birthdays));
+  await send(birthdays);
   log(`${day} : annoncé — ${names}`);
   await rememberAnnounced(day);
   return birthdays.length;
